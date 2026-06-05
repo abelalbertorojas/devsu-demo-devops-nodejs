@@ -61,7 +61,7 @@ jobs:
           name: coverage-report
           path: coverage/
           retention-days: 7
-          
+
   # ── 3. Static Code Analysis (ESLint) ────────────────────────────────────────
   lint:
     name: Static Code Analysis
@@ -80,4 +80,44 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint        
+  
+  # ── 4. Vulnerability Scan ───────────────────────
+  vulnerability-scan:
+    name: Vulnerability Scan
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: npm audit (high & critical)
+        # continue-on-error so pre-existing CVEs don't block the pipeline;
+        # results still appear in the step summary.
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Trivy — filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-fs.sarif
+          severity: HIGH,CRITICAL
+
+      - name: Upload filesystem scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-fs.sarif
   
