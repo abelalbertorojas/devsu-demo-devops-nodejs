@@ -199,4 +199,39 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
-          sarif_file: trivy-image.sarif        
+          sarif_file: trivy-image.sarif
+
+  # ── 7. Deploy to Kubernetes ──────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Kubernetes
+    needs: [docker, image-scan]
+    # image-scan is skipped on PRs, so this job is automatically skipped on PRs too.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f kubernetes/namespace.yaml
+          kubectl apply -f kubernetes/
+
+      - name: Update deployment image
+        run: |
+          kubectl set image deployment/demo-app \
+            demo-app=${{ needs.docker.outputs.image-ref }} \
+            --namespace demo-app
+
+      - name: Wait for rollout
+        run: kubectl rollout status deployment/demo-app --namespace demo-app --timeout=120s
