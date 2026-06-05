@@ -61,6 +61,7 @@ jobs:
           name: coverage-report
           path: coverage/
           retention-days: 7
+          
   # ── 3. Static Code Analysis (ESLint) ────────────────────────────────────────
   lint:
     name: Static Code Analysis
@@ -79,3 +80,4 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint        
+  
