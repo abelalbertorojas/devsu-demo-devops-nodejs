@@ -168,3 +168,35 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # ── 6. Container Image Scan ─────────────────────
+  image-scan:
+    name: Container Image Scan
+    needs: docker
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trivy — image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ needs.docker.outputs.image-ref }}
+          format: sarif
+          output: trivy-image.sarif
+          severity: HIGH,CRITICAL
+
+      - name: Upload image scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-image.sarif        
