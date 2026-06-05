@@ -1,0 +1,11 @@
+node_modules
+.env
+dev.sqlite
+*.sqlite
+.git
+.gitignore
+coverage
+*.log
+*.md
+index.test.js
+.babelrc
