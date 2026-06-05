@@ -201,11 +201,76 @@ jobs:
         with:
           sarif_file: trivy-image.sarif
 
-  # ── 7. Deploy to Kubernetes ──────────────────────────────────────────────────
-  deploy:
-    name: Deploy to Kubernetes
+  # ── 7. Smoke Test — cluster efímero k3d ─────────────────────────────────────
+  smoke-test:
+    name: Smoke Test — k3d
     needs: [docker, image-scan]
     # image-scan is skipped on PRs, so this job is automatically skipped on PRs too.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install k3d
+        run: curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+
+      - name: Create k3d cluster
+        run: |
+          k3d cluster create demo --servers 1 --agents 1
+          kubectl wait --for=condition=ready node --all --timeout=60s
+
+      - name: Load image into cluster
+        # Importar la imagen evita que k3d intente pullear de GHCR dentro del cluster
+        run: |
+          docker pull ${{ needs.docker.outputs.image-ref }}
+          k3d image import ${{ needs.docker.outputs.image-ref }} -c demo
+
+      - name: Apply Kubernetes manifests
+        # --validate=false evita errores de schema por recursos (Ingress nginx, HPA)
+        # que k3d no tiene instalados pero que no son necesarios para el smoke test
+        run: |
+          kubectl apply --validate=false -f kubernetes/namespace.yaml
+          kubectl apply --validate=false -f kubernetes/
+          kubectl patch deployment demo-app -n demo-app \
+            -p '{"spec":{"template":{"spec":{"containers":[{"name":"demo-app","imagePullPolicy":"IfNotPresent"}]}}}}'
+
+      - name: Update deployment image
+        run: |
+          kubectl set image deployment/demo-app \
+            demo-app=${{ needs.docker.outputs.image-ref }} \
+            --namespace demo-app
+
+      - name: Wait for rollout
+        run: kubectl rollout status deployment/demo-app --namespace demo-app --timeout=120s
+
+      - name: Smoke test — GET /api/users
+        run: |
+          kubectl port-forward svc/demo-app 8080:80 -n demo-app &
+          sleep 3
+          curl -f http://localhost:8080/api/users
+          echo "✅ GET /api/users OK"
+
+      - name: Smoke test — POST /api/users
+        run: |
+          curl -f -X POST http://localhost:8080/api/users \
+            -H "Content-Type: application/json" \
+            -d '{"dni":"99999999","name":"Smoke Test User"}'
+          echo "✅ POST /api/users OK"
+
+  # ── 8. Deploy to Kubernetes ──────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Kubernetes
+    needs: [docker, smoke-test]
+    # smoke-test depends on image-scan which is skipped on PRs → deploy is also skipped on PRs.
     runs-on: ubuntu-latest
     permissions:
       contents: read
