@@ -1,0 +1,29 @@
+#cloud-config
+package_update: true
+packages:
+  - iptables-persistent
+
+write_files:
+  - path: /root/install-k3s.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -e
+
+      # IP pública desde el metadata de OCI
+      PUBLIC_IP=$(curl -s http://169.254.169.254/opc/v1/instance/networkInterfaces/0/publicIp)
+
+      # Instalar k3s con la IP pública como TLS SAN para que kubectl funcione externamente
+      curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --tls-san ${PUBLIC_IP}" sh -
+
+      # Abrir puertos en el firewall de la VM
+      iptables -I INPUT -p tcp --dport 6443 -j ACCEPT
+      iptables -I INPUT -p tcp --dport 80 -j ACCEPT
+      iptables -I INPUT -p tcp --dport 443 -j ACCEPT
+      netfilter-persistent save
+
+      # Permitir que el usuario ubuntu lea el kubeconfig
+      chmod 644 /etc/rancher/k3s/k3s.yaml
+
+runcmd:
+  - /root/install-k3s.sh

@@ -6,19 +6,18 @@ metadata:
   labels:
     app.kubernetes.io/name: demo-app
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    # Traefik (k3s default)
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     # Uncomment to enable TLS termination via cert-manager:
     # cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   # tls:
   #   - hosts:
   #       - demo-app.example.com
   #     secretName: demo-app-tls
   rules:
-    - host: demo-app.example.com   # replace with your actual domain
+    - host: demo-app.example.com   # replace with your actual domain or IP
       http:
         paths:
           - path: /

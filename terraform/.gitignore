@@ -1,0 +1,7 @@
+# Archivos con credenciales — nunca al repositorio
+terraform.tfvars
+*.pem
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl

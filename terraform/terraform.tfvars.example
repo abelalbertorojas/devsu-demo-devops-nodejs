@@ -1,0 +1,24 @@
+# Copiar este archivo a terraform.tfvars y completar los valores
+# NUNCA commitear terraform.tfvars al repositorio
+
+# Oracle Cloud → clic en tu avatar (arriba derecha) → Tenancy
+tenancy_ocid = "ocid1.tenancy.oc1..xxxxxxxxxx"
+
+# Oracle Cloud → clic en tu avatar → User Settings → User Information
+user_ocid = "ocid1.user.oc1..xxxxxxxxxx"
+
+# Oracle Cloud → User Settings → API Keys → fingerprint de la key que creaste
+fingerprint = "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"
+
+# Ruta local al archivo .pem descargado al crear la API key
+private_key_path = "~/.oci/oci_api_key.pem"
+
+# Región donde está tu cuenta Free Tier
+# Ejemplos: sa-saopaulo-1 | us-ashburn-1 | eu-frankfurt-1
+region = "sa-saopaulo-1"
+
+# OCID del compartment. Para cuenta raíz usar el mismo valor que tenancy_ocid
+compartment_ocid = "ocid1.tenancy.oc1..xxxxxxxxxx"
+
+# Contenido de tu clave pública SSH: cat ~/.ssh/id_rsa.pub
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2E..."

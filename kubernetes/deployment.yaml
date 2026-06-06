@@ -37,7 +37,7 @@ spec:
 
       containers:
         - name: demo-app
-          image: ghcr.io/abelalbertorojas/devsu-demo-devops-nodejs:latest
+          image: ghcr.io/abelalbertorojas/devsu-demo-devops-nodejs:develop
           imagePullPolicy: Always
           ports:
             - name: http

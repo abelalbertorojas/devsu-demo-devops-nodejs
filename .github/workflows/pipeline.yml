@@ -270,7 +270,7 @@ jobs:
   deploy:
     name: Deploy to Kubernetes
     needs: [docker, smoke-test]
-    # smoke-test depends on image-scan which is skipped on PRs → deploy is also skipped on PRs.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read

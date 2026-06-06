@@ -1,3 +1,10 @@
+# Terraform — credenciales OCI (nunca al repositorio)
+terraform/terraform.tfvars
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+*.pem
+
 # Logs
 logs
 *.log
